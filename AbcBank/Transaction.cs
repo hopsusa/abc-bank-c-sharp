@@ -8,14 +8,25 @@ namespace AbcBank
 {
     public class Transaction
     {
-        public readonly double amount;
+        public double Amount { get; private set; }
 
-        private DateTime transactionDate;
+        public DateTime TransactionDate { get; private set; }
 
         public Transaction(double amount)
         {
-            this.amount = amount;
-            this.transactionDate = DateProvider.getInstance().now();
+            Amount = amount;
+            TransactionDate = DateTime.Now;
+        }
+
+        /// <summary>
+        /// This is used for testing
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <param name="timeStamp"></param>
+        public Transaction(double amount, DateTime timeStamp)
+        {
+            Amount = amount;
+            TransactionDate = timeStamp;
         }
 
     }

@@ -1,36 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AbcBank
 {
+    public enum AccountType
+    {
+        Checking = 0,
+        Savings = 1,
+        MaxiSavings = 2,
+        TenDayMaxiSavings = 3
+    }
     public class Account
     {
-
-        public const int CHECKING = 0;
-        public const int SAVINGS = 1;
-        public const int MAXI_SAVINGS = 2;
-
-        private readonly int accountType;
+        public AccountType AccountType { get; private set; }
         public List<Transaction> transactions;
+        private const String KGreaterThanZero = "amount must be greater than zero";
 
-        public Account(int accountType)
+        public Account(AccountType accountType)
         {
-            this.accountType = accountType;
+            AccountType = accountType;
             this.transactions = new List<Transaction>();
         }
 
         public void deposit(double amount)
         {
+            deposit(amount, DateTime.Now);
+        }
+
+        public void deposit(double amount, DateTime timeStamp)
+        {
             if (amount <= 0)
             {
-                throw new ArgumentException("amount must be greater than zero");
+                throw new ArgumentException(KGreaterThanZero);
             }
             else
             {
-                transactions.Add(new Transaction(amount));
+                transactions.Add(new Transaction(amount, timeStamp));
             }
         }
 
@@ -38,7 +43,7 @@ namespace AbcBank
         {
             if (amount <= 0)
             {
-                throw new ArgumentException("amount must be greater than zero");
+                throw new ArgumentException(KGreaterThanZero);
             }
             else
             {
@@ -48,44 +53,73 @@ namespace AbcBank
 
         public double interestEarned()
         {
-            double amount = sumTransactions();
-            switch (accountType)
+            double amount = Balance();
+            switch (AccountType)
             {
-                case SAVINGS:
-                    if (amount <= 1000)
-                        return amount * 0.001;
-                    else
-                        return 1 + (amount - 1000) * 0.002;
-                // case SUPER_SAVINGS:
-                //     if (amount <= 4000)
-                //         return 20;
-                case MAXI_SAVINGS:
-                    if (amount <= 1000)
-                        return amount * 0.02;
-                    if (amount <= 2000)
-                        return 20 + (amount - 1000) * 0.05;
-                    return 70 + (amount - 2000) * 0.1;
+                case AccountType.Savings:
+                    return CalculateSavingsInterestEarned(amount);
+                case AccountType.MaxiSavings:
+                    return CalculateMaxiSavingsInterestEarned(amount);
+                case AccountType.TenDayMaxiSavings:
+                    return TenDayMaxiSavingsInterestEarned(amount);
                 default:
                     return amount * 0.001;
             }
         }
 
-        public double sumTransactions()
+        public double CalculateSavingsInterestEarned(double amount)
         {
-            return checkIfTransactionsExist(true);
+            if (amount <= 1000)
+                return amount*0.001;
+            else
+                return 1 + (amount - 1000)*0.002;
         }
 
-        private double checkIfTransactionsExist(bool checkAll)
+        public double CalculateMaxiSavingsInterestEarned(double amount)
+        {
+            if (amount <= 1000)
+                return amount * 0.02;
+            if (amount <= 2000)
+                return 20 + (amount - 1000) * 0.05;
+            return 70 + (amount - 2000) * 0.1;
+        }
+
+        public double TenDayMaxiSavingsInterestEarned(double amount)
+        {
+            AccountState accountState = GetAccountState();
+
+            if (accountState.HasTransactionInLast_N_Days(10))
+                return amount * 0.001;
+            else
+                return amount * 0.05;
+        }
+
+        public double Balance()
         {
             double amount = 0.0;
             foreach (Transaction t in transactions)
-                amount += t.amount;
+                amount += t.Amount;
             return amount;
         }
 
-        public int getAccountType()
+        public AccountState GetAccountState()
         {
-            return accountType;
+            AccountState state = new AccountState();
+            foreach (Transaction t in transactions)
+            {
+                state.CurrentBalance += t.Amount;
+
+                if (t.TransactionDate.CompareTo(state.LastTransactionDate) > 0)
+                {
+                    state.LastTransactionDate = t.TransactionDate;
+                }
+            }
+            return state;
+        }
+
+        public AccountType getAccountType()
+        {
+            return AccountType;
         }
 
     }
